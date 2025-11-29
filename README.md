@@ -75,7 +75,7 @@ sea710-project/
 - [ ] Annotate images with bounding boxes for each product class
 - [ ] Apply data augmentation (rotation, brightness, contrast adjustments)
 - [ ] Split dataset into train/validation/test sets (70/20/10 recommended)
-- [ ] Export annotated dataset in YOLO format
+- [ ] Export annotated dataset in YOLOv10 format
 - [ ] Backup annotation files to `dataset/annotations/`
 - [ ] Document annotation guidelines and class mapping
 
