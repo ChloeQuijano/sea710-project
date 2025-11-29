@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 31
+names: ['Tint', 'bb cream', 'beauty blender', 'blush', 'bronzer', 'brush', 'concealer', 'eye liner', 'eye shade', 'eyelash curler', 'foundation', 'gel', 'highlighter', 'kajal', 'lip balm', 'lip gloss', 'lip liner', 'lip shade', 'lip stick', 'lotion', 'makeup', 'mascara', 'mirror', 'nail polish', 'nail polish remover', 'perfume', 'powder', 'primer', 'serum', 'setting spray', 'sun block']
+
+roboflow:
+  workspace: first-work-nnlbg
+  project: makeup-products-detection
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/first-work-nnlbg/makeup-products-detection/dataset/1

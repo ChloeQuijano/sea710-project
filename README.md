@@ -28,11 +28,17 @@ sea710-project/
 ├── data/                    # Raw collected images
 │   ├── raw/                # Original unprocessed images
 │   └── processed/          # Preprocessed images
-├── dataset/                # Annotated dataset
-│   ├── annotations/        # Annotation files (yolov8 format)
-│   ├── train/              # Training images and labels
-│   ├── val/                # Validation images and labels
-│   └── test/               # Test images and labels
+├── dataset/                # Annotated dataset (YOLOv8 format)
+│   ├── train/              # Training set (downloaded + custom)
+│   │   ├── images/         # Training images
+│   │   └── labels/         # Training labels (.txt files)
+│   ├── val/                # Validation set (downloaded + custom)
+│   │   ├── images/         # Validation images
+│   │   └── labels/         # Validation labels (.txt files)
+│   ├── test/               # Test set (downloaded + custom)
+│   │   ├── images/         # Test images
+│   │   └── labels/         # Test labels (.txt files)
+│   └── data.yaml           # Dataset configuration file
 ├── models/                 # Trained model files
 │   ├── checkpoints/        # Training checkpoints
 │   └── final/              # Final trained models
@@ -130,6 +136,9 @@ sea710-project/
 - [ ] Final code review and cleanup
 - [ ] Package final deliverable
 
+## References
+
+**Dataset Source:** first work. (2024). *makeup products detection Dataset* [Open Source Dataset]. Roboflow Universe. https://universe.roboflow.com/first-work-nnlbg/makeup-products-detection (visited on 2025-11-29)
 
 ## Build and Run Instructions
 
