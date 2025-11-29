@@ -29,7 +29,7 @@ sea710-project/
 │   ├── raw/                # Original unprocessed images
 │   └── processed/          # Preprocessed images
 ├── dataset/                # Annotated dataset
-│   ├── annotations/        # Annotation files (YOLO format)
+│   ├── annotations/        # Annotation files (yolov8 format)
 │   ├── train/              # Training images and labels
 │   ├── val/                # Validation images and labels
 │   └── test/               # Test images and labels
@@ -75,14 +75,14 @@ sea710-project/
 - [ ] Annotate images with bounding boxes for each product class
 - [ ] Apply data augmentation (rotation, brightness, contrast adjustments)
 - [ ] Split dataset into train/validation/test sets (70/20/10 recommended)
-- [ ] Export annotated dataset in YOLOv10 format
+- [ ] Export annotated dataset in yolov8 format
 - [ ] Backup annotation files to `dataset/annotations/`
 - [ ] Document annotation guidelines and class mapping
 
 ### Phase 3: Model Development and Training
 - [ ] Set up development environment (Python 3.8+, dependencies)
-- [ ] Download pre-trained YOLO model weights (YOLOv8 recommended)
-- [ ] Configure YOLO training parameters for custom dataset
+- [ ] Download pre-trained yolov8 model weights (yolov8v8 recommended)
+- [ ] Configure yolov8 training parameters for custom dataset
 - [ ] Train initial model on training set
 - [ ] Validate model performance on validation set
 - [ ] Tune hyperparameters (learning rate, batch size, epochs)
