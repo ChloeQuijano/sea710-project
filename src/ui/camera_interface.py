@@ -1,20 +1,28 @@
 import cv2
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog
 from PIL import Image, ImageTk
 import threading
+from ultralytics import YOLO
+import numpy as np
 
 
 class CameraInterface:
     def __init__(self, root):
         self.root = root
-        self.root.title("Camera")
-        self.root.geometry("800x600")
+        self.root.title("Makeup Recognition Camera Interface")
+        self.root.geometry("900x700")
         
         # Camera setup
         self.cap = None
         self.is_running = False
         self.current_frame = None
+        
+        # YOLO model setup
+        self.model = None
+        self.model_path = None
+        self.confidence_threshold = 0.25
+        self.enable_detection = False
         
         # Setup UI
         self.setup_ui()
@@ -26,15 +34,44 @@ class CameraInterface:
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
+        # Model loading frame
+        model_frame = ttk.LabelFrame(main_frame, text="YOLO Model", padding="5")
+        model_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
+        
+        self.model_status_label = ttk.Label(model_frame, text="No model loaded", 
+                                            foreground="red")
+        self.model_status_label.grid(row=0, column=0, padx=5)
+        
+        self.load_model_btn = ttk.Button(model_frame, text="Load Model (.pt)", 
+                                         command=self.load_model)
+        self.load_model_btn.grid(row=0, column=1, padx=5)
+        
+        # Detection controls frame
+        detection_frame = ttk.LabelFrame(main_frame, text="Detection Controls", padding="5")
+        detection_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5)
+        
+        self.detection_toggle = ttk.Checkbutton(detection_frame, text="Enable Detection", 
+                                                command=self.toggle_detection)
+        self.detection_toggle.grid(row=0, column=0, padx=5)
+        
+        ttk.Label(detection_frame, text="Confidence:").grid(row=0, column=1, padx=5)
+        self.confidence_var = tk.DoubleVar(value=self.confidence_threshold)
+        confidence_scale = ttk.Scale(detection_frame, from_=0.1, to=1.0, 
+                                    orient=tk.HORIZONTAL, variable=self.confidence_var,
+                                    command=self.update_confidence)
+        confidence_scale.grid(row=0, column=2, padx=5)
+        self.confidence_label = ttk.Label(detection_frame, text=f"{self.confidence_threshold:.2f}")
+        self.confidence_label.grid(row=0, column=3, padx=5)
+        
         # Video display label
         self.video_label = ttk.Label(main_frame, text="Camera feed will appear here", 
                                      background="black", foreground="white")
-        self.video_label.grid(row=0, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
+        self.video_label.grid(row=2, column=0, columnspan=2, pady=10, sticky=(tk.W, tk.E))
         self.video_label.configure(width=80)
         
         # Control buttons frame
         button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=1, column=0, columnspan=2, pady=10)
+        button_frame.grid(row=3, column=0, columnspan=2, pady=10)
         
         # Start camera button
         self.start_btn = ttk.Button(button_frame, text="Start Camera", 
@@ -54,12 +91,18 @@ class CameraInterface:
         # Status label
         self.status_label = ttk.Label(main_frame, text="Camera: Stopped", 
                                       foreground="red")
-        self.status_label.grid(row=2, column=0, columnspan=2, pady=5)
+        self.status_label.grid(row=4, column=0, columnspan=2, pady=5)
+        
+        # Detection info label
+        self.detection_info_label = ttk.Label(main_frame, text="", foreground="blue")
+        self.detection_info_label.grid(row=5, column=0, columnspan=2, pady=5)
         
         # Configure grid weights for resizing
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
+        model_frame.columnconfigure(0, weight=1)
+        detection_frame.columnconfigure(0, weight=1)
         
     def start_camera(self):
         """Initialize and start camera capture"""
@@ -98,13 +141,104 @@ class CameraInterface:
         self.capture_btn.config(state="disabled")
         self.status_label.config(text="Camera: Stopped", foreground="red")
     
+    def load_model(self):
+        model_path = None
+        """TODO: Load YOLO model from .pt file
+        model_path = filedialog.askopenfilename(
+            title="Select YOLO Model",
+            filetypes=[("PyTorch models", "*.pt"), ("All files", "*.*")]
+        )
+        """
+        
+        if model_path:
+            try:
+                self.model = YOLO(model_path)
+                self.model_path = model_path
+                model_name = model_path.split("/")[-1].split("\\")[-1]
+                self.model_status_label.config(text=f"Model: {model_name}", 
+                                              foreground="green")
+                self.status_label.config(text="Model loaded successfully", 
+                                        foreground="green")
+            except Exception as e:
+                self.model_status_label.config(text="Error loading model", 
+                                              foreground="red")
+                self.status_label.config(text=f"Error: {str(e)}", foreground="red")
+    
+    def toggle_detection(self):
+        """Toggle object detection on/off"""
+        self.enable_detection = not self.enable_detection
+    
+    def update_confidence(self, value):
+        """Update confidence threshold"""
+        self.confidence_threshold = float(value)
+        self.confidence_label.config(text=f"{self.confidence_threshold:.2f}")
+    
+    def draw_detections(self, frame, results):
+        """Draw bounding boxes and labels on frame using OpenCV"""
+        detection_count = 0
+        
+        # Process results
+        for result in results:
+            boxes = result.boxes
+            for box in boxes:
+                # Get box coordinates
+                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                
+                # Get class and confidence
+                confidence = float(box.conf[0].cpu().numpy())
+                class_id = int(box.cls[0].cpu().numpy())
+                
+                # Filter by confidence threshold
+                if confidence >= self.confidence_threshold:
+                    detection_count += 1
+                    
+                    # Get class name (if available)
+                    class_name = result.names[class_id] if hasattr(result, 'names') else f"Class {class_id}"
+                    
+                    # Draw bounding box
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    
+                    # Prepare label text
+                    label = f"{class_name}: {confidence:.2f}"
+                    
+                    # Get text size for background
+                    (text_width, text_height), baseline = cv2.getTextSize(
+                        label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1
+                    )
+                    
+                    # Draw label background
+                    cv2.rectangle(frame, (x1, y1 - text_height - 10), 
+                                (x1 + text_width, y1), (0, 255, 0), -1)
+                    
+                    # Draw label text
+                    cv2.putText(frame, label, (x1, y1 - 5), 
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+        
+        return frame, detection_count
+    
     def update_frame(self):
-        """Continuously update video frames from camera"""
+        """Continuously update video frames from camera with YOLO detection"""
         while self.is_running:
             if self.cap is not None and self.cap.isOpened():
                 ret, frame = self.cap.read()
                 
                 if ret:
+                    # Perform detection if enabled and model is loaded
+                    if self.enable_detection and self.model is not None:
+                        # Run YOLO inference
+                        results = self.model(frame, conf=self.confidence_threshold, verbose=False)
+                        
+                        # Draw detections on frame
+                        frame, detection_count = self.draw_detections(frame.copy(), results)
+                        
+                        # Update detection info
+                        self.detection_info_label.config(
+                            text=f"Detections: {detection_count}"
+                        )
+                    else:
+                        self.detection_info_label.config(text="")
+                    
                     self.current_frame = frame.copy()
                     
                     # Convert BGR to RGB for display
@@ -112,7 +246,7 @@ class CameraInterface:
                     
                     # Resize frame to fit display (optional)
                     height, width = frame_rgb.shape[:2]
-                    max_width = 760
+                    max_width = 860
                     if width > max_width:
                         scale = max_width / width
                         new_width = int(width * scale)
