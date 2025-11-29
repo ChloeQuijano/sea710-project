@@ -9,7 +9,7 @@ Finding and identifying makeup products automatically in images and video stream
 ### Main Goals
 
 Develop an object detection model that can:
-- Detect and classify the type of makeup product being held (eyeliner, eyeshadow, lipstick, eyebrow pencil, blush, foundation, mascara)
+- Detect and classify the type of makeup product being held ( beauty blender, blush, bronzer, brush, concealer, eye liner, eye shadow, eyelash curler, foundation, gel, highlighter, lip balm, lip gloss, lip liner, lip stick, mascara, nail polish, powder, primer, setting spray)
 - Optionally identify its brand or product name using logo or text recognition
 - Run efficiently on a standard laptop without GPU dependency
 - Provide a simple user interface for live detection and product selection per facial region (eyes, lips, skin)
@@ -59,14 +59,26 @@ sea710-project/
 ## Project Tasks
 
 ### Phase 1: Dataset Collection and Preparation
-- [ ] Collect 100-200 images per product class across 7 product types:
+- [ ] Collect 100-200 images per product class across 19 product types:
   - [ ] Lipstick
+  - [ ] Beauty blender,
+  - [ ] Bronzer, 
+  - [ ] Brush, 
+  - [ ] Concealer
+  - [ ] Eyelash curler,
+  - [ ] Highlighter
+  - [ ] Lip balm
+  - [ ] Lip gloss
+  - [ ] Lip liner
+  - [ ] Nail polish
+  - [ ] Powder
+  - [ ] Primer
+  - [ ] Setting spray
   - [ ] Eyeshadow
   - [ ] Eyeliner
   - [ ] Mascara
   - [ ] Blush
   - [ ] Foundation
-  - [ ] Eyebrow pencil
 - [ ] Source images from:
   - [ ] Self-captured photos of real products
   - [ ] Web scraping from makeup retailer websites (Sephora, Ulta, brand sites)
