@@ -142,4 +142,57 @@ sea710-project/
 
 ## Build and Run Instructions
 
-TODO
+### Setup Virtual Environment
+
+It's recommended to use a virtual environment to manage dependencies:
+
+**Windows:**
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+venv\Scripts\activate
+```
+
+**macOS/Linux:**
+```bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate
+```
+
+### Install Dependencies
+
+Once your virtual environment is activated, install required packages:
+
+```bash
+# Core dependencies
+
+
+# For camera interface
+pip install opencv-python pillow
+```
+
+Or install from a requirements file (if created):
+```bash
+pip install -r requirements.txt
+```
+
+### Run Camera Interface
+
+To test the camera interface:
+
+```bash
+python src/ui/camera_interface.py
+```
+
+### Deactivate Virtual Environment
+
+When you're done working:
+
+```bash
+deactivate
+```
