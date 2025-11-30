@@ -59,7 +59,7 @@ def train():
         batch=BATCH_SIZE,
         project=str(project_dir),
         name=RUN_NAME,
-        workers=2,         
+        workers=4,         
         pretrained=True,    
         exist_ok=True,   
     )
