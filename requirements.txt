@@ -5,3 +5,7 @@ Pillow
 roboflow
 python-dotenv
 albumentations
+fastapi
+uvicorn[standard]
+python-multipart
+mediapipe

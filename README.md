@@ -1,6 +1,15 @@
-# SEA710 - Makeup Product Detection Project
+# SEA710 - Makeup Product Detection & Virtual Try-On Project
 
-Computer Vision Project for detecting and classifying makeup products from camera input using object detection.
+A computer vision application for detecting makeup products and providing virtual try-on experiences using object detection and face mesh technology.
+
+## Project Overview
+
+This project combines **YOLOv8 object detection** for makeup product recognition with **MediaPipe face mesh detection** to create an interactive mobile application that allows users to:
+- Detect and classify makeup products in real-time using their device camera
+- View product information and details
+- Experience virtual try-on with face mesh overlays tailored to specific product types
+
+The system consists of a **FastAPI backend** for model inference and face detection, and a **React Native mobile app** for the user interface.
 
 ## Problem Description and Objectives
 
@@ -8,94 +17,124 @@ Finding and identifying makeup products automatically in images and video stream
 
 ### Main Goals
 
-Develop an object detection model that can:
-- Detect and classify the type of makeup product being held ( beauty blender, blush, bronzer, brush, concealer, eye liner, eye shadow, eyelash curler, foundation, gel, highlighter, lip balm, lip gloss, lip liner, lip stick, mascara, nail polish, powder, primer, setting spray)
-- Optionally identify its brand or product name using logo or text recognition
-- Run efficiently on a standard laptop without GPU dependency
-- Provide a simple user interface for live detection and product selection per facial region (eyes, lips, skin)
+Develop a complete system that can:
+- **Detect and classify** makeup products from camera input (19 product types: beauty blender, blush, bronzer, brush, concealer, eye liner, eye shadow, eyelash curler, foundation, gel, highlighter, lip balm, lip gloss, lip liner, lip stick, mascara, nail polish, powder, primer, setting spray)
+- **Run efficiently** on standard hardware without GPU dependency
+- **Provide real-time detection** through a mobile interface
+- **Enable virtual try-on** experiences using face mesh detection and product-specific overlays
+- **Support facial region targeting** for product application (eyes, lips, skin)
 
 ## Final Deliverable
 
-- A trained object detection model capable of identifying makeup product type and optionally brand from a webcam
-- A desktop application with a simple interface for product detection and selection by facial area
-- A labeled dataset of makeup product images annotated for object detection
-- Documentation and final report for project submission
+- **Trained YOLOv8 model** capable of identifying makeup product types from camera input
+- **FastAPI backend** with product detection and face mesh endpoints
+- **React Native mobile application** with:
+  - Real-time product detection camera interface
+  - Product information display
+  - Virtual try-on with face mesh overlays
+  - Product-specific mesh rendering
+- **Labeled dataset** of makeup product images annotated for object detection
+- **Complete documentation** and project report
 
 ## Project Structure
 
 ```
 sea710-project/
-├── data/                    # Raw collected images
-│   ├── raw/                # Original unprocessed images
-│   └── processed/          # Preprocessed images
-├── dataset/                # Annotated dataset (YOLOv8 format)
-│   ├── train/              # Training set (downloaded + custom)
-│   │   ├── images/         # Training images
-│   │   └── labels/         # Training labels (.txt files)
-│   ├── val/                # Validation set (downloaded + custom)
-│   │   ├── images/         # Validation images
-│   │   └── labels/         # Validation labels (.txt files)
-│   ├── test/               # Test set (downloaded + custom)
-│   │   ├── images/         # Test images
-│   │   └── labels/         # Test labels (.txt files)
-│   └── data.yaml           # Dataset configuration file
-├── models/                 # Trained model files
-│   ├── checkpoints/        # Training checkpoints
-│   └── final/              # Final trained models
-├── src/                    # Source code
-│   ├── training/           # Training scripts
-│   ├── inference/          # Inference scripts
-│   ├── utils/              # Utility functions
-│   └── ui/                 # Desktop application code
-├── notebooks/              # Jupyter notebooks for experimentation
-├── results/                # Outputs and evaluation results
-│   ├── predictions/        # Prediction outputs
-│   └── evaluation/         # Evaluation metrics and plots
-├── docs/                   # Documentation
-├── tests/                  # Test files
-└── README.md               # This file
+├── mobile/                        # React Native/Expo mobile application
+│   ├── App.js                    # Main app entry point
+│   ├── app.json                  # Expo configuration
+│   ├── package.json              # Node.js dependencies
+│   │
+│   ├── screens/                  # Application screens
+│   │   ├── HomeScreen.js         # Entry screen with scan button
+│   │   ├── ScanProductScreen.js  # Product detection camera screen
+│   │   ├── VirtualTryOnScreen.js # Virtual try-on selection screen
+│   │   └── FaceCameraScreen.js   # Face camera with mesh overlay
+│   │
+│   ├── components/               # Reusable UI components
+│   │   └── ProductCard.js        # Product info card component
+│   │
+│   ├── navigation/               # Navigation configuration
+│   │   └── AppNavigator.js       # React Navigation setup
+│   │
+│   ├── services/                 # API service layer
+│   │   └── api.js               # Backend API communication
+│   │
+│   ├── config/                   # Configuration and feature flags
+│   │   └── featureFlags.js      # Feature toggles and app config
+│   │
+│   └── utils/                    # Utility functions
+│       ├── meshOverlays.js       # Face mesh overlay rendering
+│       └── productClasses.js     # Product class enum and utilities
+│
+├── src/                          # Backend source code
+│   ├── api/                      # FastAPI backend
+│   │   ├── main.py              # API server entry point
+│   │   ├── face_mesh.py         # MediaPipe face mesh detection
+│   │   └── product_classes.py   # Product class enum (Python)
+│   │
+│   ├── ui/                       # Desktop camera interface
+│   ├── training/                 # Model training scripts
+│   └── utils/                    # Utility functions
+│
+├── models/                       # Trained model files
+│   ├── checkpoints/              # Training checkpoints
+│   └── final/                    # Final trained models
+│
+├── dataset/                      # YOLOv8 formatted dataset
+│   ├── train/                    # Training set
+│   ├── val/                      # Validation set
+│   ├── test/                     # Test set
+│   └── data.yaml                 # Dataset configuration
+│
+├── data/                         # Raw and processed images
+│   ├── raw/                      # Original images
+│   └── processed/                # Preprocessed images
+│
+├── requirements.txt              # Python dependencies
+├── start_api.bat                 # Windows API startup script
+├── start_api.sh                  # Mac/Linux API startup script
+└── README.md                     # This file
 ```
 
 ## Project Tasks
 
 ### Phase 1: Dataset Collection and Preparation
-- [ ] Collect 100-200 images per product class across 19 product types:
-  - [ ] Lipstick
-  - [ ] Beauty blender,
-  - [ ] Bronzer, 
-  - [ ] Brush, 
-  - [ ] Concealer
-  - [ ] Eyelash curler,
-  - [ ] Highlighter
-  - [ ] Lip balm
-  - [ ] Lip gloss
-  - [ ] Lip liner
-  - [ ] Nail polish
-  - [ ] Powder
-  - [ ] Primer
-  - [ ] Setting spray
-  - [ ] Eyeshadow
-  - [ ] Eyeliner
-  - [ ] Mascara
-  - [ ] Blush
-  - [ ] Foundation
-- [ ] Source images from:
-  - [ ] Self-captured photos of real products
-  - [ ] Web scraping from makeup retailer websites (Sephora, Ulta, brand sites)
-  - [ ] Screenshots from tutorial videos
-- [ ] Include 10-15 popular brands across all product types
-- [ ] Organize raw images in `data/raw/` directory by product type
-- [ ] Pre-process images (resize, normalize, format conversion)
+- [x] Collect 100-200 images per product class across 19 product types:
+  - [x] Lipstick
+  - [x] Beauty blender,
+  - [x] Bronzer, 
+  - [x] Brush, 
+  - [x] Concealer
+  - [x] Eyelash curler,
+  - [x] Highlighter
+  - [x] Lip balm
+  - [x] Lip gloss
+  - [x] Lip liner
+  - [x] Powder
+  - [x] Primer
+  - [x] Setting spray
+  - [x] Eyeshadow
+  - [x] Eyeliner
+  - [x] Mascara
+  - [x] Blush
+  - [x] Foundation
+- [x] Source images from:
+  - [x] Self-captured photos of real products
+  - [x] Web scraping from makeup retailer websites (Sephora, Ulta, brand sites)
+- [x] Include 10-15 popular brands across all product types
+- [x] Organize raw images in `data/raw/` directory by product type
+- [x] Pre-process images (resize, normalize, format conversion)
 
 ### Phase 2: Dataset Annotation
-- [ ] Set up Roboflow account and workspace
-- [ ] Upload collected images to Roboflow
-- [ ] Annotate images with bounding boxes for each product class
-- [ ] Apply data augmentation (rotation, brightness, contrast adjustments)
-- [ ] Split dataset into train/validation/test sets (70/20/10 recommended)
-- [ ] Export annotated dataset in yolov8 format
-- [ ] Backup annotation files to `dataset/annotations/`
-- [ ] Document annotation guidelines and class mapping
+- [x] Set up Roboflow account and workspace
+- [x] Upload collected images to [Roboflow Project](https://universe.roboflow.com/sea710-makeup-detection/makeup-products-detection-ld6us)
+- [X] Annotate images with bounding boxes for each product class
+- [X] Apply data augmentation (rotation, brightness, contrast adjustments)
+- [X] Split dataset into train/validation/test sets (70/20/10 recommended)
+- [X] Export annotated dataset in yolov8 format
+- [X] Backup annotation files to `dataset/annotations/`
+- [X] Document annotation guidelines and class mapping into `docs`
 
 ### Phase 3: Model Development and Training
 - [ ] Set up development environment (Python 3.8+, dependencies)
@@ -117,54 +156,185 @@ sea710-project/
 - [ ] Test on diverse real-world images
 - [ ] Document performance benchmarks
 
-### Phase 5: Desktop Application Development
-- [ ] Set up UI framework (Tkinter/PyQt/Gradio)
-- [ ] Implement webcam capture functionality
+### Phase 5: Backend API Development
+- [x] Set up FastAPI framework
+- [x] Implement product detection endpoint (`/detect`)
+- [x] Implement health check endpoint (`/health`)
+- [x] Integrate YOLOv8 model for inference
+- [x] Add model loading functionality
+- [x] Implement confidence threshold configuration
+- [x] Add CORS support for mobile app
+- [x] Implement MediaPipe face mesh detection (`/detect-face-mesh`)
+- [x] Add facial region extraction (lips, eyes, face oval)
+- [x] Create product class enum and utilities
+- [x] Test API endpoints
+- [x] Document API with Swagger/OpenAPI
+
+### Phase 6: Mobile Application Development
+- [x] Set up React Native/Expo project
+- [x] Configure navigation (React Navigation)
+- [x] Implement Home Screen
+- [x] Implement Scan Product Screen with camera feed
+- [x] Integrate backend API for product detection
+- [x] Implement real-time detection with bounding boxes
+- [x] Create ProductCard component
+- [x] Implement Virtual Try-On Screen
+- [x] Implement Face Camera Screen
+- [x] Integrate face mesh detection API
+- [x] Implement default face mesh overlay
+- [ ] Create mesh overlay system for class-based rendering
+- [x] Add feature flags system
+- [x] Implement API status monitoring
+- [x] Add camera controls (flip, clear)
+- [x] Test on physical devices
+- [x] Handle camera permissions
+- [ ] Optimize performance and UI responsiveness
+
+### Phase 7: Desktop Application Development (Optional)
+- [X] Set up UI framework (Tkinter/PyQt/Gradio)
+- [X] Implement webcam capture functionality
 - [ ] Integrate trained model for real-time inference
 - [ ] Design UI layout:
-  - [ ] Live video feed display
+  - [X] Live video feed display
   - [ ] Detection results overlay
   - [ ] Product selection interface by facial region (eyes, lips, skin)
   - [ ] Confidence score display
 - [ ] Add product filtering by category
-- [ ] Implement brand/logo recognition (optional)
 - [ ] Test application usability
 - [ ] Create user documentation
 
-### Phase 6: Testing and Refinement
+### Phase 8: Testing and Refinement
+- [x] Test backend API endpoints
+- [x] Test mobile app on iOS/Android
+- [x] Test face mesh detection accuracy
+- [x] Test product detection accuracy
+- [x] Error handling and edge case management
+- [x] Fix navigation issues
+- [x] Optimize mobile app performance
 - [ ] Unit tests for core functions
 - [ ] Integration tests for full pipeline
-- [ ] User acceptance testing
-- [ ] Bug fixes and performance improvements
-- [ ] Error handling and edge case management
-- [ ] Optimize UI responsiveness
 
-### Phase 7: Documentation and Submission
-- [ ] Write comprehensive project report
-- [ ] Document dataset sources and ethical considerations
-- [ ] Create user guide for application
-- [ ] Document code with docstrings
-- [ ] Prepare presentation materials
-- [ ] Final code review and cleanup
-- [ ] Package final deliverable
+### Phase 9: Documentation and Submission
+- [x] Write comprehensive README
+- [x] Document mobile app structure
+- [x] Document API endpoints
+- [x] Create setup instructions
+- [x] Document feature flags system
+- [x] Document mesh overlay system
+- [ ] Write group project report
 
 ## References
 
 **Dataset Source:** first work. (2024). *makeup products detection Dataset* [Open Source Dataset]. Roboflow Universe. https://universe.roboflow.com/first-work-nnlbg/makeup-products-detection (visited on 2025-11-29)
 
-## Build and Run Instructions
+## Quick Start: Running the Full Stack
 
-### Setup Virtual Environment
+This project consists of two main components:
+1. **Backend API** (FastAPI) - Handles product detection
+2. **Mobile App** (React Native/Expo) - Camera interface and UI
 
-It's recommended to use a virtual environment to manage dependencies:
+### Prerequisites
+
+- **Python 3.8+** (for backend)
+- **Node.js v14+** (for mobile app)
+- **npm** or **yarn**
+- **Expo CLI** (optional, included with Expo)
+
+### Step 1: Setup Backend
+
+1. **Install Python dependencies** (from project root):
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Start the backend server**:
+   
+   **Windows:**
+   ```bash
+   start_api.bat
+   # OR
+   python -m src.api.main
+   ```
+   
+   **Mac/Linux:**
+   ```bash
+   bash start_api.sh
+   # OR
+   python -m src.api.main
+   ```
+
+3. **Verify backend is running**:
+   - Open browser: http://localhost:8000/health
+   - You should see: `{"status": "healthy", ...}`
+   - **Keep this terminal open** - server must stay running
+
+4. **Load a model** (optional, but required for detection):
+   - Visit http://localhost:8000/docs
+   - Use `/load-model` endpoint to load your trained model
+   - Or place model at `models/final/best.pt` (auto-loads on startup)
+
+### Step 2: Setup Mobile App
+
+1. **Find your computer's IP address**:
+   - **Windows**: Run `ipconfig`, look for "IPv4 Address"
+   - **Mac/Linux**: Run `ifconfig` or `ip addr`
+   - **Or use helper**: `python find_ip.py`
+
+2. **Configure API URL**:
+   - Copy the environment template: `cd mobile && cp .env.template .env`
+   - Edit `mobile/.env` and update with your IP address:
+     ```bash
+     API_BASE_URL_DEV=http://YOUR_IP:8000  # Replace with your IP
+     API_BASE_URL_PROD=https://your-production-api.com
+     ```
+   - The `.env` file is gitignored and won't be committed
+
+3. **Install mobile dependencies**:
+   ```bash
+   cd mobile
+   npm install
+   ```
+
+4. **Start Expo**:
+   ```bash
+   npm start
+   ```
+
+5. **Run on device**:
+   - Install **Expo Go** app on your phone
+   - Scan the QR code from terminal/browser
+   - Make sure phone and computer are on **same Wi-Fi network**
+
+### Complete Workflow
+
+```bash
+# Terminal 1: Start Backend
+python -m src.api.main
+
+# Terminal 2: Start Mobile App
+cd mobile
+npm start
+```
+
+## Detailed Setup Instructions
+
+### Backend Setup
+
+#### Using Virtual Environment (Recommended)
 
 **Windows:**
 ```bash
 # Create virtual environment
 python -m venv venv
 
-# Activate virtual environment
+# Activate
 venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start server
+python -m src.api.main
 ```
 
 **macOS/Linux:**
@@ -172,39 +342,109 @@ venv\Scripts\activate
 # Create virtual environment
 python3 -m venv venv
 
-# Activate virtual environment
+# Activate
 source venv/bin/activate
-```
 
-### Install Dependencies
-
-Once your virtual environment is activated, install required packages:
-
-```bash
-# Core dependencies
-
-
-# For camera interface
-pip install opencv-python pillow
-```
-
-Or install from a requirements file (if created):
-```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Start server
+python -m src.api.main
 ```
 
-### Run Camera Interface
+#### Backend Endpoints
 
-To test the camera interface:
+- **Health Check**: http://localhost:8000/health
+- **API Docs**: http://localhost:8000/docs (Swagger UI)
+- **Alternative Docs**: http://localhost:8000/redoc
+
+See [docs/API_STARTUP_GUIDE.md](docs/API_STARTUP_GUIDE.md) for detailed API documentation.
+
+### Mobile App Setup
+
+See [mobile/README.md](mobile/README.md) for detailed mobile app setup instructions.
+
+### Desktop Camera Interface
+
+To run the desktop camera interface (alternative to mobile app):
 
 ```bash
 python src/ui/camera_interface.py
 ```
 
-### Deactivate Virtual Environment
+See [src/ui/README.md](src/ui/README.md) for desktop interface documentation.
 
-When you're done working:
+## Troubleshooting
 
-```bash
-deactivate
-```
+### Backend Issues
+
+- **ModuleNotFoundError**: Run `pip install -r requirements.txt`
+- **Port 8000 in use**: Change port in `src/api/main.py` or stop other service
+- **Model not loading**: Check model path, ensure file exists
+
+### Mobile App Issues
+
+- **"Connecting to server..."**: 
+  - Backend not running? Start it first
+  - Wrong IP address? Check and update in `ScanProductScreen.js`
+  - Firewall blocking? Allow port 8000 in Windows Firewall
+  - Different networks? Ensure phone and computer on same Wi-Fi
+
+- **Build errors**: 
+  ```bash
+  cd mobile
+  rm -rf node_modules
+  npm install
+  npx expo start --clear
+  ```
+
+### Network Issues
+
+- **Can't connect from phone**: 
+  1. Test from phone browser: `http://YOUR_IP:8000/health`
+  2. If that works, it's an app configuration issue
+  3. If that doesn't work, it's a network/firewall issue
+
+- **Windows Firewall**: 
+  - Allow port 8000 for inbound connections
+  - Or temporarily disable firewall to test
+
+## Mobile Application Overview
+
+The mobile application is built with **React Native** and **Expo**, providing a cross-platform mobile interface for makeup product detection and virtual try-on.
+
+### Key Features
+
+1. **Product Detection**
+   - Real-time camera feed with product detection
+   - Visual bounding boxes and labels
+   - Product information cards
+   - Support for 19 product classes
+
+2. **Virtual Try-On**
+   - Face mesh detection using MediaPipe
+   - Product-specific mesh overlays
+   - Real-time AR rendering
+   - Front-facing camera interface
+
+3. **Feature Flags**
+   - Mock detection mode for testing
+   - Toggleable face mesh detection
+   - Default vs class-based mesh rendering
+
+### Mobile App Architecture
+
+- **Screens**: Four main screens (Home, Scan Product, Virtual Try-On, Face Camera)
+- **Components**: Reusable UI components (ProductCard)
+- **Services**: API communication layer
+- **Navigation**: React Navigation Stack Navigator
+- **Config**: Feature flags and app configuration
+- **Utils**: Mesh overlay system and product class utilities
+
+See [mobile/README.md](mobile/README.md) for detailed mobile app documentation.
+
+## Additional Resources
+
+- **Backend API**: See [src/api/README.md](src/api/README.md)
+- **Mobile App**: See [mobile/README.md](mobile/README.md)
+- **Desktop UI**: See [src/ui/README.md](src/ui/README.md)
