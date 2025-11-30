@@ -2,8 +2,10 @@
 import os
 from pathlib import Path
 from roboflow import Roboflow
+from dotenv import load_dotenv 
 
 def download_roboflow_dataset():
+    load_dotenv() 
     api_key = os.getenv("ROBOFLOW_API")
     version = 7 #change to the desired version number
     if not api_key:
