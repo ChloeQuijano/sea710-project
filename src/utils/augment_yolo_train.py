@@ -4,80 +4,71 @@ import cv2
 import albumentations as A
 
 # How many augmented samples per original image
-AUG_PER_IMAGE = 2
+# 1 = medium training speed, good accuracy
+# You can increase to 2 later if training is still fast.
+AUG_PER_IMAGE = 1
 
 IMG_SIZE = 640  # keep consistent with YOLO training
 
+
 def build_transform():
     """
-    Build an Albumentations pipeline that approximates your requested settings:
+    Albumentations pipeline (safe & version-friendly):
 
-    - Flip: Horizontal, Vertical
-    - 90° rotations
-    - Crop / Zoom (0–20% zoom)
-    - Rotation: [-15°, +15°]
-    - Shear: ±10° horizontal/vertical
-    - Grayscale: ~15% of images
-    - Hue: [-15°, +15°]
-    - Saturation: [-25%, +25%]
-    - Brightness: [-15%, +15%]
-    - Exposure: ±10% via gamma
-    - Blur: up to ~3 px
-    - Noise
+    - Horizontal flip
+    - Small rotation (±10°)
+    - Mild scale + shear via Affine
+    - Optional grayscale (~10%)
+    - Hue/Saturation/Value jitter
+    - Brightness/contrast jitter
+    - Light blur + noise
+    - Final resize to 640×640
     """
     transform = A.Compose(
         [
-            # Geometric
+            # --- Geometric ---
             A.HorizontalFlip(p=0.5),
-            A.VerticalFlip(p=0.5),
-            A.RandomRotate90(p=0.5),
-            # random crop / zoom (scale 0.8–1.0 => up to 20% zoom-in)
-            A.RandomResizedCrop(
-                height=IMG_SIZE,
-                width=IMG_SIZE,
-                scale=(0.8, 1.0),
-                ratio=(0.9, 1.1),
-                p=0.5
-            ),
+
             # small random rotation
             A.SafeRotate(
-                limit=15,  # -15° to +15°
+                limit=10,  # -10° to +10°
                 border_mode=cv2.BORDER_REFLECT_101,
-                p=0.7
+                p=0.6,
             ),
-            # shear
+
+            # mild scale + shear (instead of RandomResizedCrop)
             A.Affine(
-                shear={"x": (-10, 10), "y": (-10, 10)},
+                scale=(0.9, 1.1),  # slight zoom in/out
+                shear={"x": (-8, 8), "y": (-8, 8)},
+                translate_percent={"x": (-0.05, 0.05), "y": (-0.05, 0.05)},
                 mode=cv2.BORDER_REFLECT_101,
-                p=0.7
+                p=0.7,
             ),
 
-            # Color / intensity
-            A.ToGray(p=0.15),  # 15% grayscale
+            # --- Color / intensity ---
+            A.ToGray(p=0.10),  # 10% grayscale
+
             A.HueSaturationValue(
-                hue_shift_limit=15,      # -15° to +15°
-                sat_shift_limit=25,      # -25% to +25% (approx)
-                val_shift_limit=15,      # -15% to +15%
-                p=0.7
-            ),
-            A.RandomBrightnessContrast(
-                brightness_limit=0.15,   # -15% to +15%
-                contrast_limit=0.15,
-                p=0.7
-            ),
-            A.RandomGamma(
-                gamma_limit=(90, 110),   # ~ -10% to +10% exposure
-                p=0.5
+                hue_shift_limit=10,   # -10 to +10
+                sat_shift_limit=20,   # ±20
+                val_shift_limit=15,   # ±15
+                p=0.6,
             ),
 
-            # Blur & noise
+            A.RandomBrightnessContrast(
+                brightness_limit=0.15,  # -15% to +15%
+                contrast_limit=0.15,
+                p=0.6,
+            ),
+
+            # --- Blur & noise ---
             A.GaussianBlur(
-                blur_limit=(1, 3),       # kernel size up to ~3px
-                p=0.3
+                blur_limit=(1, 3),
+                p=0.25,
             ),
             A.GaussNoise(
                 var_limit=(5.0, 20.0),
-                p=0.3
+                p=0.25,
             ),
 
             # Ensure final size
@@ -87,7 +78,7 @@ def build_transform():
             format="yolo",              # (x_center, y_center, w, h), normalized
             label_fields=["class_labels"],
             min_visibility=0.3,
-        )
+        ),
     )
     return transform
 
@@ -131,12 +122,12 @@ def save_yolo_labels(label_path: Path, bboxes, class_labels):
 
 def augment_train_split():
     """
-    Augment dataset/train/images and dataset/train/labels in-place by
-    adding extra *_augX.jpg images + labels.
+    Augment dataset/preprocessed/train/images and labels in-place
+    by adding extra *_augX.jpg images + labels.
     """
     root = Path(__file__).resolve().parents[2]
-    images_dir = root / "dataset" / "train" / "images"
-    labels_dir = root / "dataset" / "train" / "labels"
+    images_dir = root / "dataset" / "preprocessed" / "train" / "images"
+    labels_dir = root / "dataset" / "preprocessed" / "train" / "labels"
 
     if not images_dir.exists() or not labels_dir.exists():
         raise FileNotFoundError(f"Train set not found under {images_dir} / {labels_dir}")
@@ -166,14 +157,14 @@ def augment_train_split():
             print(f"[WARN] Could not read {img_path}, skipping.")
             continue
 
-        # convert to RGB because Albumentations expects HWC image (usually fine with BGR too)
+        # convert to RGB for Albumentations
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         for aug_i in range(AUG_PER_IMAGE):
             augmented = transform(
                 image=image,
                 bboxes=bboxes,
-                class_labels=class_labels
+                class_labels=class_labels,
             )
 
             aug_img = augmented["image"]
@@ -181,7 +172,7 @@ def augment_train_split():
             aug_labels = augmented["class_labels"]
 
             if not aug_bboxes:
-                # all bboxes got cropped out or invisible after transforms
+                # all bboxes got cropped out or became too small
                 continue
 
             # convert back to BGR for saving with OpenCV
