@@ -18,7 +18,7 @@ def preprocess_image(in_path: Path, out_path: Path):
     img = Image.open(in_path)
 
     # Auto-Orient (like Roboflow's Auto-Orient)
-    img = ImageOps.exif_transpose(img)∫
+    img = ImageOps.exif_transpose(img)
 
     # Ensure RGB
     img = img.convert("RGB")

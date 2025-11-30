@@ -140,11 +140,11 @@ shutil.copy2(src_label, dst_label)
 As a concrete example, the following pair shows one image before and after preprocessing:
 
 - **Original image (raw, arbitrary size):**  
-!["original image"](../dataset/train/images/photo-1764463786337_jpg.rf.177f77556df01ceec843a40ca044a903.jpg)
+!["original image"](../dataset/train/images/photo-1764463786337_jpg.rf.7ee51bfc56a845e18c05de5a356c03d5.jpg)
   `dataset/train/images/photo-1764463786337_jpg.rf.177f77556df01ceec843a40ca044a903.jpg`
 
 - **Preprocessed image (auto-oriented + RGB + 640×640):** 
-!["pre processed image](../dataset/preprocessed/train/images/photo-1764463786337_jpg.rf.177f77556df01ceec843a40ca044a903.jpg) 
+!["pre processed image](../dataset/preprocessed/train/images/photo-1764463786337_jpg.rf.7ee51bfc56a845e18c05de5a356c03d5.jpg) 
   `dataset/preprocessed/train/images/photo-1764463786337_jpg.rf.177f77556df01ceec843a40ca044a903.jpg`
 
 The filename is preserved, but the preprocessed version is:
