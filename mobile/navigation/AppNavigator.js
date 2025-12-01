@@ -1,3 +1,8 @@
+/**
+ * App Navigation Configuration
+ * Sets up React Navigation stack navigator with all app screens
+ * Handles navigation between Home, Product Scanning, Virtual Try-On, and Face Camera screens
+ */
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';

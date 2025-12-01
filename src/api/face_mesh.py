@@ -124,31 +124,72 @@ class FaceMeshDetector:
         landmarks = face_data['landmarks']
         
         # MediaPipe Face Mesh landmark indices (468 total landmarks)
-        # These are approximate and may need adjustment based on MediaPipe version
+        # Using correct MediaPipe Face Mesh landmark indices for proper outlines
         
-        # Lips region (indices 61-68, 78-96)
-        upper_lip_indices = list(range(61, 68)) + list(range(78, 84))
-        lower_lip_indices = list(range(84, 96))
+        # Outer lips (ordered to form a closed loop going clockwise around the lips)
+        # MediaPipe outer lip landmarks - must include both upper and lower lips
+        # Path: Start at left corner -> Upper lip (left to right) -> Right corner -> Lower lip (right to left) -> Back to start
+        # Upper lip outer: 61, 84, 17, 314, 405, 320, 307, 375, 321, 308
+        # Lower lip outer: 324, 318, 402, 317, 14, 87, 178, 88, 95, 78
+        # Complete path: 61 -> 84 -> 17 -> 314 -> 405 -> 320 -> 307 -> 375 -> 321 -> 308 -> 324 -> 318 -> 402 -> 317 -> 14 -> 87 -> 178 -> 88 -> 95 -> 78 -> 61
+        outer_lip_indices = [61, 84, 17, 314, 405, 320, 307, 375, 321, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 78]
         
-        # Left eye (indices 33-42)
-        left_eye_indices = list(range(33, 42))
+        # Inner lips (for more precise lip area)
+        inner_lip_indices = [78, 81, 80, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95]
         
-        # Right eye (indices 263-272)
-        right_eye_indices = list(range(263, 272))
+        # Left eye (ordered for proper outline - clockwise)
+        left_eye_indices = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246]
         
-        # Face contour/oval (indices 10-15, 234-250)
-        face_oval_indices = list(range(10, 15)) + list(range(234, 250))
+        # Right eye (ordered for proper outline - clockwise)
+        right_eye_indices = [263, 249, 390, 373, 374, 380, 381, 382, 362, 398, 384, 385, 386, 387, 388, 466]
+        
+        # Eyeshadow area (above eyes - eyelid/eyebrow region)
+        # Left eyeshadow: area above left eye - includes eyebrow and upper eyelid
+        # Key landmarks: eyebrow (70, 63, 105, 66, 107, 55, 65, 52, 53, 46) and upper eyelid area
+        # Form a region from eyebrow down to just above the eye
+        left_eyeshadow_indices = [70, 63, 105, 66, 107, 55, 65, 52, 53, 46, 124, 35, 31, 228, 229, 230, 231, 232, 233, 244, 245, 122, 6, 197, 196, 3, 51, 48, 115, 131, 134, 102, 49, 220, 305, 281, 363, 360]
+        
+        # Right eyeshadow: area above right eye - includes eyebrow and upper eyelid
+        # Key landmarks: eyebrow (300, 293, 334, 296, 336, 285, 295, 282, 283, 276) and upper eyelid area
+        right_eyeshadow_indices = [300, 293, 334, 296, 336, 285, 295, 282, 283, 276, 353, 265, 261, 447, 448, 449, 450, 451, 452, 453, 464, 351, 326, 425, 427, 411, 280, 278, 344, 340, 346, 347, 330, 279, 358, 360, 440, 344]
+        
+        # Face oval/contour (ordered for proper outline)
+        face_oval_indices = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109]
+        
+        # Under-eye bags (below eyes)
+        left_under_eye_indices = [23, 24, 25, 110, 226, 31, 228, 229, 230, 231, 232, 233]
+        right_under_eye_indices = [253, 254, 255, 339, 446, 260, 447, 448, 449, 450, 451, 452]
+        
+        # Around mouth (perioral region)
+        around_mouth_indices = [0, 11, 12, 13, 14, 15, 16, 17, 18, 200, 269, 270, 271, 272, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95, 78]
         
         # Filter valid indices
         def get_landmarks(indices):
             return [landmarks[i] for i in indices if 0 <= i < len(landmarks)]
         
+        # Get landmarks and ensure proper ordering
+        outer_lip_landmarks = get_landmarks(outer_lip_indices)
+        inner_lip_landmarks = get_landmarks(inner_lip_indices)
+        
+        # Split outer lip into upper and lower for fallback
+        # Upper lip: first 10 points (61 to 308)
+        # Lower lip: last 10 points (324 to 78), but reverse for proper path
+        upper_lip_landmarks = get_landmarks(outer_lip_indices[:10])
+        lower_lip_landmarks = get_landmarks(outer_lip_indices[10:])
+        
         return {
-            'upper_lip': get_landmarks(upper_lip_indices),
-            'lower_lip': get_landmarks(lower_lip_indices),
+            'outer_lip': outer_lip_landmarks,  # Complete lip outline in order
+            'inner_lip': inner_lip_landmarks,
+            'upper_lip': upper_lip_landmarks,  # Upper lip only
+            'lower_lip': lower_lip_landmarks,  # Lower lip only
             'left_eye': get_landmarks(left_eye_indices),
             'right_eye': get_landmarks(right_eye_indices),
             'face_oval': get_landmarks(face_oval_indices),
+            'left_under_eye': get_landmarks(left_under_eye_indices),
+            'right_under_eye': get_landmarks(right_under_eye_indices),
+            'around_mouth': get_landmarks(around_mouth_indices),
+            'left_eyeshadow': get_landmarks(left_eyeshadow_indices),  # Area above left eye
+            'right_eyeshadow': get_landmarks(right_eyeshadow_indices),  # Area above right eye
         }
 
 # Global face mesh detector instance

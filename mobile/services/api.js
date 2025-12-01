@@ -36,30 +36,39 @@ export const detectProducts = async (baseUrl, imageUri, confidence = 0.25) => {
     const match = /\.(\w+)$/.exec(filename);
     const type = match ? `image/${match[1]}` : 'image/jpeg';
     
+    // For React Native, use the proper format
     formData.append('image', {
       uri: imageUri,
-      type: type,
-      name: filename,
+      type: 'image/jpeg', // Always use jpeg for camera photos
+      name: 'photo.jpg',
     });
 
+    console.log(`[API] Sending detection request to ${baseUrl}/detect`);
+    console.log(`[API] Image URI: ${imageUri.substring(0, 50)}...`);
+
     // Make request
+    // Note: Don't set Content-Type header - let fetch set it automatically with boundary
     const url = `${baseUrl}/detect?confidence=${confidence}`;
     const response = await fetch(url, {
       method: 'POST',
       body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      // Content-Type will be set automatically by fetch with proper boundary
     });
+
+    console.log(`[API] Response status: ${response.status}`);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      const errorMessage = errorData.detail || `HTTP error! status: ${response.status}`;
+      console.error(`[API] Error response:`, errorMessage);
+      throw new Error(errorMessage);
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log(`[API] Detection successful: ${result.count || 0} detections`);
+    return result;
   } catch (error) {
-    console.error('Detection error:', error);
+    console.error('[API] Detection error:', error);
     throw error;
   }
 };
@@ -89,9 +98,7 @@ export const detectProductsWithImage = async (baseUrl, imageUri, confidence = 0.
     const response = await fetch(url, {
       method: 'POST',
       body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      // Content-Type will be set automatically by fetch with proper boundary
     });
 
     if (!response.ok) {
@@ -188,20 +195,33 @@ export const detectFaceMesh = async (baseUrl, imageUri, drawMesh = false) => {
     const response = await fetch(url, {
       method: 'POST',
       body: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      // Content-Type will be set automatically by fetch with proper boundary
     });
 
     if (!response.ok) {
+      // Return a safe error response instead of throwing
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      console.log('[Face Mesh API] Error response:', errorData.detail || `HTTP error! status: ${response.status}`);
+      return {
+        status: 'error',
+        face_detected: false,
+        message: errorData.detail || `HTTP error! status: ${response.status}`,
+        landmarks: [],
+        num_landmarks: 0,
+      };
     }
 
     return await response.json();
   } catch (error) {
-    // Silently handle errors - don't log or throw to prevent popups
-    throw error;
+    // Silently handle errors - return safe response instead of throwing to prevent popups
+    console.log('[Face Mesh API] Network/processing error:', error.message);
+    return {
+      status: 'error',
+      face_detected: false,
+      message: error.message || 'Network error',
+      landmarks: [],
+      num_landmarks: 0,
+    };
   }
 };
 

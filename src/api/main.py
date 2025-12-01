@@ -5,6 +5,7 @@ Handles image uploads and YOLO model inference
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 from ultralytics import YOLO
 import cv2
 import numpy as np
@@ -24,17 +25,6 @@ except ImportError as e:
     FACE_MESH_AVAILABLE = False
     def get_face_mesh_detector():
         raise ImportError("MediaPipe is not installed. Run: pip install mediapipe")
-
-app = FastAPI(title="Makeup Product Detection API", version="1.0.0")
-
-# Enable CORS for mobile app
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your mobile app's origin
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Global model variable
 model: Optional[YOLO] = None
@@ -58,15 +48,50 @@ def load_model(path: str):
         raise
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Load model on startup if default path exists"""
-    default_model_path = "models/final/best.pt"
-    if os.path.exists(default_model_path):
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan event handler for startup and shutdown"""
+    # Startup
+    print("Starting up API server...")
+    # Try absolute path first, then fallback to relative path
+    absolute_model_path = r"C:\Users\itsme\OneDrive\Desktop\School Things\SWE Year 4\SEA710\sea710-project\models\final\best.pt"
+    relative_model_path = "models/final/best.pt"
+    
+    # Determine which path to use
+    if os.path.exists(absolute_model_path):
+        default_model_path = absolute_model_path
+    elif os.path.exists(relative_model_path):
+        default_model_path = relative_model_path
+    else:
+        print("Warning: Default model file not found at either absolute or relative path")
+        default_model_path = None
+    
+    if default_model_path:
         try:
             load_model(default_model_path)
         except Exception as e:
             print(f"Could not load default model: {str(e)}")
+    
+    yield
+    
+    # Shutdown
+    print("Shutting down API server...")
+
+
+app = FastAPI(
+    title="Makeup Product Detection API",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Enable CORS for mobile app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify your mobile app's origin
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
@@ -133,18 +158,30 @@ async def detect_products(
         # Read image file
         image_bytes = await image.read()
         
+        if not image_bytes or len(image_bytes) == 0:
+            raise HTTPException(status_code=400, detail="Empty image file received")
+        
+        print(f"[API] Received image: {len(image_bytes)} bytes, content_type: {image.content_type}")
+        
         # Convert bytes to numpy array
         nparr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
         if img is None:
-            raise HTTPException(status_code=400, detail="Invalid image format")
+            print(f"[API] Failed to decode image. First 20 bytes: {image_bytes[:20]}")
+            raise HTTPException(status_code=400, detail="Invalid image format - could not decode image")
+        
+        print(f"[API] Image decoded successfully: shape={img.shape}")
         
         # Use provided confidence or default
         conf_threshold = confidence if confidence is not None else confidence_threshold
         
+        print(f"[API] Running YOLO inference with confidence threshold: {conf_threshold}")
+        
         # Run YOLO inference
         results = model(img, conf=conf_threshold, verbose=False)
+        
+        print(f"[API] YOLO inference completed")
         
         # Parse results
         detections = []
@@ -178,6 +215,8 @@ async def detect_products(
                     }
                 })
         
+        print(f"[API] Returning {len(detections)} detections")
+        
         return {
             "status": "success",
             "detections": detections,
@@ -188,7 +227,12 @@ async def detect_products(
             }
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
+        print(f"[API] Detection error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Detection error: {str(e)}")
 
 
@@ -341,10 +385,19 @@ async def detect_face_mesh(
         face_data = detector.detect_face_mesh(img)
         
         if face_data is None:
+            print("[API] No face detected in image")
             return {
                 "status": "success",
                 "face_detected": False,
-                "message": "No face detected in image"
+                "message": "No face detected in image",
+                "landmarks": [],
+                "num_landmarks": 0,
+                "bbox": None,
+                "image_dimensions": {
+                    "width": int(img_width),
+                    "height": int(img_height)
+                },
+                "facial_regions": None
             }
         
         # Get facial regions
@@ -369,6 +422,11 @@ async def detect_face_mesh(
                 "left_eye": facial_regions["left_eye"],
                 "right_eye": facial_regions["right_eye"],
                 "face_oval": facial_regions["face_oval"],
+                "left_under_eye": facial_regions.get("left_under_eye", []),
+                "right_under_eye": facial_regions.get("right_under_eye", []),
+                "around_mouth": facial_regions.get("around_mouth", []),
+                "left_eyeshadow": facial_regions.get("left_eyeshadow", []),  # Area above left eye
+                "right_eyeshadow": facial_regions.get("right_eyeshadow", []),  # Area above right eye
             }
         }
         

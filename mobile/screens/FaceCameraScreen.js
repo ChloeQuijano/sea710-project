@@ -1,3 +1,8 @@
+/**
+ * Face Camera Screen with AR Mesh Overlay
+ * Front-facing camera interface that detects face mesh landmarks using MediaPipe
+ * and renders product-specific AR overlays (lipstick, eyeshadow, foundation, etc.)
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
@@ -9,15 +14,17 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { StatusBar } from 'expo-status-bar';
+import { useFocusEffect } from '@react-navigation/native';
+import Svg, { Polygon, Path } from 'react-native-svg';
 import { detectFaceMesh } from '../services/api';
 import { AppConfig, FeatureFlags } from '../config/featureFlags';
-import { renderDefaultMesh, renderClassBasedMesh } from '../utils/meshOverlays';
+import { renderDefaultMesh, renderClassBasedMesh, getFacialRegions } from '../utils/meshOverlays';
 
 const API_BASE_URL = __DEV__
   ? AppConfig.API_BASE_URL_DEV
   : AppConfig.API_BASE_URL_PROD;
 
-const FACE_DETECTION_INTERVAL = 500; // Run face detection every 500ms for real-time feel
+const FACE_DETECTION_INTERVAL = 1000; // Run face detection every 1 second for better accuracy
 
 export default function FaceCameraScreen({ route, navigation }) {
   const { productType, productName, productImageUrl } = route.params || {};
@@ -30,19 +37,32 @@ export default function FaceCameraScreen({ route, navigation }) {
   const [cameraViewDimensions, setCameraViewDimensions] = useState(null);
   const cameraRef = useRef(null);
   const detectionIntervalRef = useRef(null);
+  const lastMeshDataRef = useRef(null); // Track last rendered mesh data to prevent unnecessary re-renders
+  const persistentMeshDataRef = useRef(null); // Keep last valid mesh data to prevent blinking
 
-  useEffect(() => {
-    // Start continuous face detection only if feature flag is enabled
-    if (FeatureFlags.ENABLE_FACE_MESH) {
-      startFaceDetection();
-    }
-
-    return () => {
-      if (detectionIntervalRef.current) {
-        clearInterval(detectionIntervalRef.current);
+  // Use focus effect to start/stop face detection when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('[Face Detection] Screen focused - starting face detection');
+      
+      // Start continuous face detection only if feature flag is enabled
+      if (FeatureFlags.ENABLE_FACE_MESH) {
+        startFaceDetection();
       }
-    };
-  }, []);
+
+      // Cleanup when screen loses focus
+      return () => {
+        console.log('[Face Detection] Screen blurred - stopping face detection');
+        if (detectionIntervalRef.current) {
+          clearInterval(detectionIntervalRef.current);
+          detectionIntervalRef.current = null;
+        }
+        // Clear face mesh data when leaving screen
+        setFaceMeshData(null);
+        setFaceDetected(false);
+      };
+    }, [])
+  );
 
   const startFaceDetection = () => {
     if (!FeatureFlags.ENABLE_FACE_MESH) return;
@@ -55,22 +75,42 @@ export default function FaceCameraScreen({ route, navigation }) {
   };
 
   const detectFace = async () => {
-    if (!cameraRef.current || isDetecting || !FeatureFlags.ENABLE_FACE_MESH) return;
+    if (!cameraRef.current || isDetecting || !FeatureFlags.ENABLE_FACE_MESH) {
+      console.log('[Face Detection] Skipping - cameraRef:', !!cameraRef.current, 'isDetecting:', isDetecting, 'flag:', FeatureFlags.ENABLE_FACE_MESH);
+      return;
+    }
 
     setIsDetecting(true);
     try {
+      console.log('[Face Detection] Capturing photo...');
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.7,
         base64: false,
-        skipProcessing: false,
+        skipProcessing: true, // Use skipProcessing for faster capture
       });
+
+      if (!photo || !photo.uri) {
+        console.error('[Face Detection] Failed to capture photo');
+        return;
+      }
 
       // Store photo dimensions for coordinate scaling
       if (photo.width && photo.height) {
         setPhotoDimensions({ width: photo.width, height: photo.height });
       }
 
+      console.log('[Face Detection] Calling API with photo URI:', photo.uri.substring(0, 50));
       const result = await detectFaceMesh(API_BASE_URL, photo.uri, false);
+
+      // Handle both success and error responses gracefully
+      if (result.status === 'error') {
+        // API returned an error response (not a thrown error)
+        console.log('[Face Detection] API returned error:', result.message);
+        // Don't clear mesh data - keep last known position to prevent blinking
+        // Only update detection status
+        setFaceDetected(false);
+        return;
+      }
 
       console.log('[Face Detection] Result:', {
         status: result.status,
@@ -88,15 +128,25 @@ export default function FaceCameraScreen({ route, navigation }) {
           // Use image dimensions from API response if available, otherwise use photo dimensions
           const imgDims = result.image_dimensions || { width: photo.width, height: photo.height };
           setPhotoDimensions(imgDims);
+          
+          // Update mesh data - this will replace the previous mesh smoothly
           setFaceMeshData(result);
+          persistentMeshDataRef.current = result; // Store for persistence
           setFaceDetected(true);
         } else {
-          setFaceMeshData(null);
+          // Face not detected - keep last mesh data to prevent blinking
+          // Only update the detection status, don't clear mesh
           setFaceDetected(false);
+          // Keep using persistentMeshDataRef.current for rendering
         }
+      } else {
+        // Handle any other status - keep last mesh
+        setFaceDetected(false);
       }
     } catch (error) {
-      // Silently handle errors - don't show popups or console errors
+      // Silently handle any unexpected errors - don't show popups
+      // This should rarely happen now since detectFaceMesh doesn't throw
+      console.log('[Face Detection] Unexpected error (handled silently):', error.message);
       setFaceMeshData(null);
       setFaceDetected(false);
     } finally {
@@ -105,16 +155,24 @@ export default function FaceCameraScreen({ route, navigation }) {
   };
 
   const renderFaceMesh = () => {
-    if (!faceMeshData || !faceMeshData.landmarks) {
-      console.log('[Face Mesh] Cannot render - missing data:', {
-        hasData: !!faceMeshData,
-        hasLandmarks: !!faceMeshData?.landmarks,
-        landmarksCount: faceMeshData?.landmarks?.length,
-      });
+    // Use persistent mesh data if current data is not available (prevents blinking)
+    const meshDataToUse = faceMeshData || persistentMeshDataRef.current;
+    
+    if (!meshDataToUse || !meshDataToUse.landmarks) {
+      // No mesh data available at all
       return null;
     }
 
-    const { landmarks, bbox } = faceMeshData;
+    // Check if mesh data has actually changed to prevent unnecessary re-renders
+    const dataKey = `${meshDataToUse.landmarks?.length || 0}-${meshDataToUse.bbox?.x || 0}-${meshDataToUse.bbox?.y || 0}`;
+    if (lastMeshDataRef.current === dataKey) {
+      // Data hasn't changed, skip re-render but still return the mesh
+      // This allows the mesh to persist even when detection temporarily fails
+    } else {
+      lastMeshDataRef.current = dataKey;
+    }
+
+    const { landmarks, bbox } = meshDataToUse;
     
     // Use camera view dimensions if available, otherwise fall back to window dimensions
     const viewDims = cameraViewDimensions || Dimensions.get('window');
@@ -122,7 +180,7 @@ export default function FaceCameraScreen({ route, navigation }) {
     const viewHeight = viewDims.height;
 
     // Get image dimensions from API response or photo dimensions
-    const imgDims = faceMeshData.image_dimensions || photoDimensions;
+    const imgDims = meshDataToUse.image_dimensions || photoDimensions;
     
     if (!imgDims) {
       console.warn('[Face Mesh] No image dimensions available, using fallback scaling');
@@ -144,6 +202,8 @@ export default function FaceCameraScreen({ route, navigation }) {
     const isFrontCamera = cameraType === 'front';
     const mirrorX = isFrontCamera;
 
+    // Use the same scaling approach as camera preview
+    // The camera preview fills the view, so we need to match that scaling
     if (viewAspectRatio > imgAspectRatio) {
       // View is wider than image - image will be letterboxed (black bars on sides)
       // Scale based on height to fill view height
@@ -157,6 +217,16 @@ export default function FaceCameraScreen({ route, navigation }) {
       scaleY = scaleX; // Maintain aspect ratio
       offsetY = (viewHeight - imgHeight * scaleY) / 2;
     }
+
+    console.log('[Face Mesh] Scaling params:', {
+      imgSize: { width: imgWidth, height: imgHeight },
+      viewSize: { width: viewWidth, height: viewHeight },
+      scale: { scaleX, scaleY },
+      offset: { offsetX, offsetY },
+      mirrorX,
+      imgAspectRatio: imgAspectRatio.toFixed(3),
+      viewAspectRatio: viewAspectRatio.toFixed(3),
+    });
 
     // Prepare scaling parameters for mesh overlay functions
     const scalingParams = {
@@ -178,46 +248,85 @@ export default function FaceCameraScreen({ route, navigation }) {
       meshPoints = renderDefaultMesh(landmarks, scalingParams);
     } else {
       // Render class-based mesh overlay
-      meshPoints = renderClassBasedMesh(productType, faceMeshData, scalingParams);
+      meshPoints = renderClassBasedMesh(productType, meshDataToUse, scalingParams);
     }
 
-    console.log('[Face Mesh] Rendering:', {
-      useDefaultMesh: FeatureFlags.ENABLE_DEFAULT_FACE_MESH,
-      productType,
-      landmarksCount: landmarks.length,
-      meshPointsCount: meshPoints.length,
-      imageDimensions: { imgWidth, imgHeight },
-      viewDimensions: { viewWidth, viewHeight },
-    });
+    // Only log when mesh points change significantly
+    if (meshPoints && meshPoints.length > 0) {
+      console.log('[Face Mesh] Rendered:', {
+        productType,
+        landmarksCount: landmarks.length,
+        meshPointsCount: meshPoints.length,
+        hasFacialRegions: !!getFacialRegions(faceMeshData),
+      });
+    }
 
     if (!meshPoints || meshPoints.length === 0) {
       return null;
     }
 
-    return (
-      <View style={styles.meshOverlay}>
-        {meshPoints.map((point) => {
-          // Get style based on point type
-          const pointStyle = getPointStyle(point.type);
-          
-          return (
-            <View
-              key={point.key}
-              style={[
-                pointStyle,
-                {
-                  left: point.x,
-                  top: point.y,
-                  width: point.size || 3,
-                  height: point.size || 3,
-                  borderRadius: (point.size || 3) / 2,
-                },
-              ]}
-            />
-          );
-        })}
-      </View>
-    );
+    // Check if we're using new shape-based rendering (polygons) or old point-based (dots)
+    const isShapeBased = meshPoints.length > 0 && meshPoints[0].type === 'polygon';
+
+    if (isShapeBased) {
+      // Render as semi-transparent filled shapes
+      return (
+        <View style={styles.meshOverlay} pointerEvents="none">
+          <Svg style={StyleSheet.absoluteFill} width={viewWidth} height={viewHeight}>
+            {meshPoints.map((shape) => {
+              if (shape.type === 'polygon' && shape.points && shape.points.length >= 3) {
+                // Create a closed path string for proper outline
+                const pathData = shape.points
+                  .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+                  .join(' ') + ' Z'; // Close the path
+                
+                // Use Path instead of Polygon for better control
+                return (
+                  <Path
+                    key={shape.key}
+                    d={pathData}
+                    fill={shape.color || '#FF1493'}
+                    fillOpacity={shape.opacity || 0.4}
+                    stroke={shape.color || '#FF1493'}
+                    strokeWidth={2}
+                    strokeOpacity={0.6}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                );
+              }
+              return null;
+            })}
+          </Svg>
+        </View>
+      );
+    } else {
+      // Fallback to old point-based rendering for default mesh
+      return (
+        <View style={styles.meshOverlay}>
+          {meshPoints.map((point) => {
+            // Get style based on point type
+            const pointStyle = getPointStyle(point.type);
+            
+            return (
+              <View
+                key={point.key}
+                style={[
+                  pointStyle,
+                  {
+                    left: point.x,
+                    top: point.y,
+                    width: point.size || 3,
+                    height: point.size || 3,
+                    borderRadius: (point.size || 3) / 2,
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
+      );
+    }
   };
 
   /**

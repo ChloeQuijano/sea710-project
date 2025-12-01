@@ -1,3 +1,8 @@
+/**
+ * Product Card Component
+ * Bottom sheet component that displays detected product information
+ * with options to try virtual look or dismiss
+ */
 import React from 'react';
 import {
   StyleSheet,
@@ -11,8 +16,15 @@ import {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// Product types that don't support virtual try-on
+const NO_VIRTUAL_TRYON_PRODUCTS = ['brush', 'eyelash curler', 'beauty blender'];
+
 export default function ProductCard({ product, onDismiss, onTryVirtualLook }) {
   const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  
+  // Check if this product type supports virtual try-on
+  const productType = product.label?.toLowerCase() || '';
+  const supportsVirtualTryOn = !NO_VIRTUAL_TRYON_PRODUCTS.includes(productType);
 
   React.useEffect(() => {
     Animated.spring(slideAnim, {
@@ -49,42 +61,41 @@ export default function ProductCard({ product, onDismiss, onTryVirtualLook }) {
       </TouchableOpacity>
 
       <View style={styles.content}>
-        {/* Product Image */}
-        <View style={styles.imageContainer}>
-          {product.productImageUrl ? (
-            <Image
-              source={{ uri: product.productImageUrl }}
-              style={styles.productImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.placeholderImage}>
-              <Text style={styles.placeholderText}>No Image</Text>
-            </View>
-          )}
-        </View>
-
         {/* Product Info */}
         <Text style={styles.productName}>
           {product.productName || product.label}
         </Text>
         
-        <Text style={styles.priceRange}>
-          {product.priceRange || 'Price info unavailable'}
-        </Text>
+        {/* Only show price range if available */}
+        {product.priceRange && (
+          <Text style={styles.priceRange}>
+            {product.priceRange}
+          </Text>
+        )}
 
-        {/* Action Button */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
-            onPress={() => {
-              handleDismiss();
-              setTimeout(() => onTryVirtualLook(product), 350);
-            }}
-          >
-            <Text style={styles.primaryButtonText}>Try Virtual Look</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Action Button - Only show for products that support virtual try-on */}
+        {supportsVirtualTryOn && (
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.primaryButton]}
+              onPress={() => {
+                handleDismiss();
+                setTimeout(() => onTryVirtualLook(product), 350);
+              }}
+            >
+              <Text style={styles.primaryButtonText}>Try Virtual Look</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        {/* Info message for products that don't support virtual try-on */}
+        {!supportsVirtualTryOn && (
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoText}>
+              Virtual try-on is not available for this product type
+            </Text>
+          </View>
+        )}
       </View>
     </Animated.View>
   );
@@ -137,29 +148,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 10,
   },
-  imageContainer: {
-    width: '100%',
-    height: 150,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 15,
-    backgroundColor: '#f5f5f5',
-  },
-  productImage: {
-    width: '100%',
-    height: '100%',
-  },
-  placeholderImage: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#e0e0e0',
-  },
-  placeholderText: {
-    color: '#999',
-    fontSize: 14,
-  },
   productName: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -199,6 +187,19 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 16,
     fontWeight: '600',
+  },
+  infoContainer: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  infoText: {
+    color: '#666',
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
 

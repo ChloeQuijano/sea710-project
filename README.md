@@ -71,161 +71,45 @@ sea710-project/
 │   ├── api/                      # FastAPI backend
 │   │   ├── main.py              # API server entry point
 │   │   ├── face_mesh.py         # MediaPipe face mesh detection
-│   │   └── product_classes.py   # Product class enum (Python)
+│   │   ├── product_classes.py   # Product class enum (Python)
+│   │   └── README.md            # API documentation
 │   │
-│   ├── ui/                       # Desktop camera interface
 │   ├── training/                 # Model training scripts
-│   └── utils/                    # Utility functions
+│   │   ├── train_yolo.py        # YOLOv8 training script
+│   │   └── Training_expriement.ipynb  # Training experiments notebook
+│   │
+│   ├── utils/                    # Utility functions
+│   │   ├── augment_yolo_train.py # Data augmentation utilities
+│   │   ├── get_data.py          # Data retrieval utilities
+│   │   └── preprocess_yolo.py   # YOLO preprocessing utilities
+│   │
+│   └── test/                     # Test images
 │
 ├── models/                       # Trained model files
-│   ├── checkpoints/              # Training checkpoints
-│   └── final/                    # Final trained models
+│   └── final/                    # Final trained models and results
 │
 ├── dataset/                      # YOLOv8 formatted dataset
-│   ├── train/                    # Training set
-│   ├── val/                      # Validation set
-│   ├── test/                     # Test set
-│   └── data.yaml                 # Dataset configuration
+│   ├── train/                    # Training set (images and labels)
+│   ├── valid/                    # Validation set (images and labels)
+│   ├── test/                     # Test set (images and labels)
+│   ├── preprocessed/             # Preprocessed dataset splits
+│   ├── data.yaml                 # Dataset configuration
+│   ├── README.dataset.txt        # Dataset documentation
+│   └── README.roboflow.txt       # Roboflow dataset info
 │
 ├── data/                         # Raw and processed images
-│   ├── raw/                      # Original images
+│   ├── raw/                      # Original images by product category
 │   └── processed/                # Preprocessed images
+│
+├── docs/                         # Project documentation
+│   ├── Augmentation_Documentation.md    # Data augmentation docs
+│   └── Preprocessing_Documentation.md  # Preprocessing docs
 │
 ├── requirements.txt              # Python dependencies
 ├── start_api.bat                 # Windows API startup script
 ├── start_api.sh                  # Mac/Linux API startup script
 └── README.md                     # This file
 ```
-
-## Project Tasks
-
-### Phase 1: Dataset Collection and Preparation
-- [x] Collect 100-200 images per product class across 19 product types:
-  - [x] Lipstick
-  - [x] Beauty blender,
-  - [x] Bronzer, 
-  - [x] Brush, 
-  - [x] Concealer
-  - [x] Eyelash curler,
-  - [x] Highlighter
-  - [x] Lip balm
-  - [x] Lip gloss
-  - [x] Lip liner
-  - [x] Powder
-  - [x] Primer
-  - [x] Setting spray
-  - [x] Eyeshadow
-  - [x] Eyeliner
-  - [x] Mascara
-  - [x] Blush
-  - [x] Foundation
-- [x] Source images from:
-  - [x] Self-captured photos of real products
-  - [x] Web scraping from makeup retailer websites (Sephora, Ulta, brand sites)
-- [x] Include 10-15 popular brands across all product types
-- [x] Organize raw images in `data/raw/` directory by product type
-- [x] Pre-process images (resize, normalize, format conversion)
-
-### Phase 2: Dataset Annotation
-- [x] Set up Roboflow account and workspace
-- [x] Upload collected images to [Roboflow Project](https://universe.roboflow.com/sea710-makeup-detection/makeup-products-detection-ld6us)
-- [X] Annotate images with bounding boxes for each product class
-- [X] Apply data augmentation (rotation, brightness, contrast adjustments)
-- [X] Split dataset into train/validation/test sets (70/20/10 recommended)
-- [X] Export annotated dataset in yolov8 format
-- [X] Backup annotation files to `dataset/annotations/`
-- [X] Document annotation guidelines and class mapping into `docs`
-
-### Phase 3: Model Development and Training
-- [ ] Set up development environment (Python 3.8+, dependencies)
-- [ ] Download pre-trained yolov8 model weights (yolov8v8 recommended)
-- [ ] Configure yolov8 training parameters for custom dataset
-- [ ] Train initial model on training set
-- [ ] Validate model performance on validation set
-- [ ] Tune hyperparameters (learning rate, batch size, epochs)
-- [ ] Implement early stopping and model checkpointing
-- [ ] Train final model and save to `models/`
-- [ ] Document training process and results
-
-### Phase 4: Model Evaluation and Optimization
-- [ ] Evaluate model on test set
-- [ ] Calculate metrics (mAP, precision, recall per class)
-- [ ] Analyze confusion matrix
-- [ ] Test inference speed on CPU
-- [ ] Optimize model for CPU inference if needed (quantization, pruning)
-- [ ] Test on diverse real-world images
-- [ ] Document performance benchmarks
-
-### Phase 5: Backend API Development
-- [x] Set up FastAPI framework
-- [x] Implement product detection endpoint (`/detect`)
-- [x] Implement health check endpoint (`/health`)
-- [x] Integrate YOLOv8 model for inference
-- [x] Add model loading functionality
-- [x] Implement confidence threshold configuration
-- [x] Add CORS support for mobile app
-- [x] Implement MediaPipe face mesh detection (`/detect-face-mesh`)
-- [x] Add facial region extraction (lips, eyes, face oval)
-- [x] Create product class enum and utilities
-- [x] Test API endpoints
-- [x] Document API with Swagger/OpenAPI
-
-### Phase 6: Mobile Application Development
-- [x] Set up React Native/Expo project
-- [x] Configure navigation (React Navigation)
-- [x] Implement Home Screen
-- [x] Implement Scan Product Screen with camera feed
-- [x] Integrate backend API for product detection
-- [x] Implement real-time detection with bounding boxes
-- [x] Create ProductCard component
-- [x] Implement Virtual Try-On Screen
-- [x] Implement Face Camera Screen
-- [x] Integrate face mesh detection API
-- [x] Implement default face mesh overlay
-- [ ] Create mesh overlay system for class-based rendering
-- [x] Add feature flags system
-- [x] Implement API status monitoring
-- [x] Add camera controls (flip, clear)
-- [x] Test on physical devices
-- [x] Handle camera permissions
-- [ ] Optimize performance and UI responsiveness
-
-### Phase 7: Desktop Application Development (Optional)
-- [X] Set up UI framework (Tkinter/PyQt/Gradio)
-- [X] Implement webcam capture functionality
-- [ ] Integrate trained model for real-time inference
-- [ ] Design UI layout:
-  - [X] Live video feed display
-  - [ ] Detection results overlay
-  - [ ] Product selection interface by facial region (eyes, lips, skin)
-  - [ ] Confidence score display
-- [ ] Add product filtering by category
-- [ ] Test application usability
-- [ ] Create user documentation
-
-### Phase 8: Testing and Refinement
-- [x] Test backend API endpoints
-- [x] Test mobile app on iOS/Android
-- [x] Test face mesh detection accuracy
-- [x] Test product detection accuracy
-- [x] Error handling and edge case management
-- [x] Fix navigation issues
-- [x] Optimize mobile app performance
-- [ ] Unit tests for core functions
-- [ ] Integration tests for full pipeline
-
-### Phase 9: Documentation and Submission
-- [x] Write comprehensive README
-- [x] Document mobile app structure
-- [x] Document API endpoints
-- [x] Create setup instructions
-- [x] Document feature flags system
-- [x] Document mesh overlay system
-- [ ] Write group project report
-
-## References
-
-**Dataset Source:** first work. (2024). *makeup products detection Dataset* [Open Source Dataset]. Roboflow Universe. https://universe.roboflow.com/first-work-nnlbg/makeup-products-detection (visited on 2025-11-29)
 
 ## Quick Start: Running the Full Stack
 
@@ -358,21 +242,10 @@ python -m src.api.main
 - **API Docs**: http://localhost:8000/docs (Swagger UI)
 - **Alternative Docs**: http://localhost:8000/redoc
 
-See [docs/API_STARTUP_GUIDE.md](docs/API_STARTUP_GUIDE.md) for detailed API documentation.
-
 ### Mobile App Setup
 
 See [mobile/README.md](mobile/README.md) for detailed mobile app setup instructions.
 
-### Desktop Camera Interface
-
-To run the desktop camera interface (alternative to mobile app):
-
-```bash
-python src/ui/camera_interface.py
-```
-
-See [src/ui/README.md](src/ui/README.md) for desktop interface documentation.
 
 ## Troubleshooting
 
@@ -447,4 +320,28 @@ See [mobile/README.md](mobile/README.md) for detailed mobile app documentation.
 
 - **Backend API**: See [src/api/README.md](src/api/README.md)
 - **Mobile App**: See [mobile/README.md](mobile/README.md)
-- **Desktop UI**: See [src/ui/README.md](src/ui/README.md)
+- **AI Debugging Guide**: See [docs/AI_Debugging_Reference.md](docs/AI_Debugging_Reference.md) - Guide for using AI assistants to debug issues
+
+## References
+
+**Dataset Source:** first work. *makeup products detection Dataset* [Open Source Dataset]. Roboflow Universe. https://universe.roboflow.com/first-work-nnlbg/makeup-products-detection
+
+**MediaPipe Face Mesh:** Google. *MediaPipe Face Mesh* [Computer Vision Library]. MediaPipe Solutions. https://developers.google.com/mediapipe/solutions/vision/face_landmarker
+
+**React Native:** Meta. *React Native* [Mobile Framework]. React Native Documentation. https://reactnative.dev/
+
+**Expo:** Expo. *Expo* [React Native Framework]. Expo Documentation. https://docs.expo.dev/
+
+**React Native SVG:** react-native-svg Contributors. *react-native-svg* [SVG Rendering Library]. GitHub. https://github.com/react-native-svg/react-native-svg
+
+## AI Disclosure
+
+This project uses Generative AI tools such as Microsoft's Copilot to assist with:
+- **Debugging**: Troubleshooting and understanding the context of error messages to help resolve code issues during development
+   - Example prompt: "I get error (when starting app): (NOBRIDGE) ERROR  Warning: Error: Exception in HostFunction: Unable to convert string to floating point value: "large""
+- **Research**: Investigating MediaPipe face mesh dimensions and coordinate transformations. Research recommendations for a tech stack when transitioning over to a mobile app versus desktop.
+   - Example prompt: "would I be able to convert the UI to a mobile app instead? What is the tech stack going to look like?"
+
+**Note**: Only approved GenAI applications were used, and no sensitive or confidential information was input into AI systems during development.
+
+[Source: Seneca Library](https://library.senecapolytechnic.ca/c.php?g=736149&p=5401558)

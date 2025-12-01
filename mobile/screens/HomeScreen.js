@@ -1,3 +1,7 @@
+/**
+ * Home Screen
+ * Entry screen with welcome message and navigation to product scanning
+ */
 import React from 'react';
 import {
   StyleSheet,

@@ -1,10 +1,14 @@
+/**
+ * Virtual Try-On Selection Screen
+ * Intermediate screen that displays product information and allows navigation to face camera
+ * for virtual try-on experience
+ */
 import React from 'react';
 import {
   StyleSheet,
   View,
   Text,
   SafeAreaView,
-  Image,
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
@@ -17,17 +21,6 @@ export default function VirtualTryOnScreen({ route, navigation }) {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         {/* Product Header */}
         <View style={styles.header}>
-          {productImageUrl ? (
-            <Image
-              source={{ uri: productImageUrl }}
-              style={styles.productImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.placeholderImage}>
-              <Text style={styles.placeholderText}>No Image</Text>
-            </View>
-          )}
           <Text style={styles.productName}>
             {productName || productType || 'Virtual Try-On'}
           </Text>
@@ -88,25 +81,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 40,
-  },
-  productImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 12,
-    marginBottom: 15,
-  },
-  placeholderImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 12,
-    backgroundColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  placeholderText: {
-    color: '#999',
-    fontSize: 14,
   },
   productName: {
     fontSize: 24,
