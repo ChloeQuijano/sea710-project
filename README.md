@@ -99,7 +99,6 @@ sea710-project/
 │
 ├── data/                         # Raw and processed images
 │   ├── raw/                      # Original images by product category
-│   └── processed/                # Preprocessed images
 │
 ├── docs/                         # Project documentation
 │   ├── Augmentation_Documentation.md    # Data augmentation docs
