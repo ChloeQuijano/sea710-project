@@ -75,11 +75,13 @@ sea710-project/
 │   │
 │   ├── ui/                       # Desktop camera interface
 │   ├── training/                 # Model training scripts
-│   └── utils/                    # Utility functions
+│   ├── utils/                    # Utility functions
+│   └── comprehensive_evaluation/ # Code for evalution data
+│
 │
 ├── models/                       # Trained model files
 │   ├── checkpoints/              # Training checkpoints
-│   └── final/                    # Final trained models
+│   └── final/                    # Final trained models and evaluations results files
 │
 ├── dataset/                      # YOLOv8 formatted dataset
 │   ├── train/                    # Training set
