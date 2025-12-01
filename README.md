@@ -328,7 +328,7 @@ npm start
 python -m venv venv
 
 # Activate
-venv\Scripts\activate
+source venv/Scripts/activate
 
 # Install dependencies
 pip install -r requirements.txt
